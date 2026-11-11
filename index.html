@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>มิเตอร์ — แดชบอร์ดพลังงานห้องเรียน</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172b4d;
+      --muted: #718096;
+      --line: #e8edf4;
+      --canvas: #f5f7fb;
+      --surface: #fff;
+      --navy: #183b56;
+      --teal: #159b8a;
+      --teal-light: #e5f6f2;
+      --blue: #5478e5;
+      --blue-light: #edf1ff;
+      --amber: #c98218;
+      --amber-light: #fff5e3;
+      --red: #d45858;
+      --red-light: #fff0ef;
+      --shadow: 0 2px 12px rgba(28, 48, 76, .045);
+      font-family: "Leelawadee UI", Tahoma, "Noto Sans Thai", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--canvas); font-size: 14px; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 248px; flex: 0 0 248px; background: var(--navy); color: #fff;
+      display: flex; flex-direction: column; padding: 27px 16px 18px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; padding: 0 10px 31px; }
+    .brand-mark {
+      width: 39px; height: 39px; border-radius: 12px; display: grid; place-items: center;
+      color: #fff; background: #1b9c8b;
+    }
+    .brand-name { font-weight: 750; font-size: 18px; letter-spacing: -.3px; }
+    .brand-caption { margin-top: 2px; color: #a9bdca; font-size: 11px; }
+    .nav-label { color: #91a9b8; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; padding: 0 12px 10px; }
+    .nav-list { display: grid; gap: 5px; }
+    .nav-button {
+      position: relative; width: 100%; display: flex; gap: 12px; align-items: center;
+      border: 0; border-radius: 9px; padding: 11px 12px; text-align: left;
+      color: #c3d1db; background: transparent; transition: background .15s, color .15s;
+    }
+    .nav-button:hover { background: rgba(255,255,255,.07); color: white; }
+    .nav-button.active { color: #fff; background: rgba(255,255,255,.12); }
+    .nav-button.active::before { content: ""; position: absolute; left: -16px; height: 25px; width: 3px; background: #46c2ad; border-radius: 0 4px 4px 0; }
+    .nav-button svg { width: 18px; height: 18px; flex: 0 0 auto; }
+    .sidebar-spacer { flex: 1; }
+    .sidebar-note { border: 1px solid rgba(255,255,255,.12); border-radius: 11px; padding: 13px; color: #c3d1db; line-height: 1.65; font-size: 11px; }
+    .sidebar-note strong { color: #fff; display: block; font-size: 12px; margin-bottom: 4px; }
+
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .topbar {
+      min-height: 69px; padding: 0 34px; background: rgba(255,255,255,.92);
+      border-bottom: 1px solid var(--line); display: flex; justify-content: space-between;
+      align-items: center; gap: 18px;
+    }
+    .topbar-context { color: var(--muted); font-size: 12px; }
+    .topbar-context strong { color: var(--ink); font-size: 13px; font-weight: 650; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .source-pill { display: inline-flex; align-items: center; gap: 7px; color: #568170; background: #edf7f1; padding: 7px 10px; border-radius: 20px; font-size: 11px; white-space: nowrap; }
+    .source-dot { width: 7px; height: 7px; border-radius: 50%; background: #40a879; }
+    .upload-button, .button-secondary {
+      border: 1px solid #dfe6ee; background: #fff; color: #344a62;
+      padding: 8px 11px; border-radius: 8px; font-weight: 600; font-size: 12px;
+    }
+    .upload-button:hover, .button-secondary:hover { border-color: #9eb4c6; background: #fafcff; }
+    .content { width: 100%; max-width: 1530px; margin: 0 auto; padding: 27px 34px 35px; }
+    .filters {
+      display: flex; align-items: end; gap: 10px; padding: 13px 15px;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 11px;
+      box-shadow: var(--shadow); margin-bottom: 21px; flex-wrap: wrap;
+    }
+    .filter-field { display: grid; gap: 5px; min-width: 132px; }
+    .filter-field label { color: var(--muted); font-size: 10px; font-weight: 700; }
+    .filter-field input, .filter-field select {
+      height: 34px; padding: 0 9px; color: #344a62; background: #fff;
+      border: 1px solid #e3e9f0; border-radius: 7px; min-width: 0;
+    }
+    .filter-field input:focus, .filter-field select:focus { outline: 2px solid #ccece6; border-color: #6bbcac; }
+    .filter-divider { width: 1px; align-self: stretch; background: var(--line); margin: 1px 3px 0; }
+    .clear-button { height: 34px; border: 0; color: #4a6780; background: transparent; padding: 0 7px; font-weight: 650; white-space: nowrap; }
+    .clear-button:hover { color: var(--teal); }
+    .page { display: none; }
+    .page.active { display: block; animation: appear .18s ease-out; }
+    @keyframes appear { from { opacity: .65; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+    .page-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 0 0 18px; }
+    .eyebrow { color: var(--teal); font-weight: 750; font-size: 10px; letter-spacing: 1.1px; margin-bottom: 5px; }
+    h1 { font-size: 23px; letter-spacing: -.45px; margin: 0; line-height: 1.35; }
+    .page-subtitle { color: var(--muted); margin: 5px 0 0; font-size: 12px; line-height: 1.6; }
+    .small-meta { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; margin-bottom: 15px; }
+    .card, .kpi-card { background: var(--surface); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); }
+    .kpi-card { padding: 15px 16px 14px; min-height: 119px; }
+    .kpi-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+    .kpi-label { color: #687b91; font-size: 11px; font-weight: 650; }
+    .kpi-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; color: var(--teal); background: var(--teal-light); }
+    .kpi-icon.blue { color: var(--blue); background: var(--blue-light); }
+    .kpi-icon.amber { color: var(--amber); background: var(--amber-light); }
+    .kpi-icon.red { color: var(--red); background: var(--red-light); }
+    .kpi-icon svg { width: 15px; height: 15px; }
+    .kpi-value { margin-top: 10px; font-size: 24px; font-weight: 750; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+    .kpi-foot { color: #8a98a8; font-size: 10px; margin-top: 3px; }
+    .chart-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(270px, 1fr); gap: 14px; margin-bottom: 14px; }
+    .card { padding: 17px 18px; min-width: 0; }
+    .card-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
+    .card-title { font-size: 13px; font-weight: 700; }
+    .card-subtitle { color: var(--muted); font-size: 10px; margin-top: 4px; line-height: 1.5; }
+    .chart { width: 100%; display: block; overflow: visible; }
+    .trend-chart { height: 188px; }
+    .bar-chart { height: 188px; }
+    .chart text { fill: #8190a1; font-family: inherit; font-size: 10px; }
+    .chart .grid-line { stroke: #edf1f5; stroke-width: 1; }
+    .chart .axis-line { stroke: #dce4ec; stroke-width: 1; }
+    .chart .bar { fill: #55b8a5; }
+    .chart .bar:hover { fill: #249b89; }
+    .chart .bar-blue { fill: #8299ed; }
+    .chart .bar-blue:hover { fill: #5478e5; }
+    .legend { display: flex; gap: 13px; color: #7a899a; font-size: 10px; align-items: center; }
+    .legend span { display: inline-flex; gap: 5px; align-items: center; }
+    .legend i { width: 8px; height: 8px; display: inline-block; border-radius: 3px; background: #55b8a5; }
+    .legend .legend-blue { background: #8299ed; }
+    .bottom-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(270px, .8fr); gap: 14px; }
+    .mini-table { width: 100%; border-collapse: collapse; }
+    .mini-table td { border-top: 1px solid #eff2f6; padding: 9px 5px; font-size: 11px; }
+    .mini-table td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .room-name { display: inline-flex; align-items: center; gap: 8px; }
+    .room-dot { width: 7px; height: 7px; border-radius: 50%; background: #53b7a3; }
+    .room-dot.blue { background: #8299ed; }
+    .note-box { border-radius: 9px; padding: 11px 12px; background: #f1f8f6; color: #456b64; line-height: 1.7; font-size: 11px; }
+    .note-box strong { color: #286d60; }
+    .note-box.warning { background: #fff7e9; color: #795b27; }
+    .notice { margin-top: 13px; padding: 10px 12px; border-radius: 8px; background: #f7f9fc; color: #65778b; font-size: 10px; line-height: 1.6; }
+    .status { display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; padding: 4px 8px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .status-valid { color: #39876d; background: #eaf6ef; }
+    .status-review { color: #a16a17; background: #fff4df; }
+    .status-invalid { color: #bd5252; background: #fff0ef; }
+    .section-card { margin-bottom: 14px; }
+    .table-wrap { width: 100%; overflow-x: auto; }
+    .data-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+    .data-table th { color: #75869a; background: #f8fafc; font-size: 10px; text-align: left; font-weight: 700; padding: 10px 11px; border-top: 1px solid #edf1f5; border-bottom: 1px solid #edf1f5; }
+    .data-table td { color: #344a62; font-size: 11px; padding: 10px 11px; border-bottom: 1px solid #eff2f6; vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: 0; }
+    .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .data-table .muted-cell { color: #8996a5; }
+    .data-table .problem-text { color: #8b5f25; white-space: normal; min-width: 170px; max-width: 250px; line-height: 1.55; }
+    .table-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .table-tools { display: flex; align-items: center; gap: 8px; }
+    .search-input { height: 33px; width: 190px; border: 1px solid #e3e9f0; border-radius: 7px; padding: 0 10px; }
+    .count-label { color: var(--muted); font-size: 10px; white-space: nowrap; }
+    .quality-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+    .quality-stat { border-radius: 10px; padding: 13px 15px; background: #fff; border: 1px solid var(--line); }
+    .quality-stat span { display: block; color: var(--muted); font-size: 10px; }
+    .quality-stat strong { display: block; font-size: 20px; margin-top: 4px; }
+    .quality-stat.valid strong { color: #39876d; }
+    .quality-stat.review strong { color: #a16a17; }
+    .quality-stat.invalid strong { color: #bd5252; }
+    .rules-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .rule { border: 1px solid #edf1f5; background: #fbfcfe; border-radius: 8px; padding: 10px 11px; display: flex; gap: 9px; align-items: start; }
+    .rule-number { display: grid; place-items: center; width: 20px; height: 20px; flex: 0 0 20px; border-radius: 50%; background: #e7f5f1; color: #368b78; font-size: 10px; font-weight: 700; }
+    .rule p { margin: 1px 0 0; color: #65778b; font-size: 10px; line-height: 1.55; }
+    .rule strong { color: #344a62; }
+    .insight-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+    .insight-card { min-height: 138px; }
+    .insight-index { color: #9bb9b1; font-weight: 750; font-size: 11px; }
+    .insight-card h3 { margin: 9px 0 6px; font-size: 13px; }
+    .insight-card p { color: #687b91; font-size: 11px; line-height: 1.7; margin: 0; }
+    .insight-card strong { color: #344a62; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .bullet-list { margin: 0; padding: 0 0 0 18px; color: #60748a; font-size: 11px; line-height: 1.85; }
+    .bullet-list li { padding-left: 3px; margin-bottom: 5px; }
+    .method-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .method-card h3 { margin: 0 0 9px; font-size: 12px; }
+    .formula { padding: 9px 10px; border-radius: 7px; background: #f6f8fb; color: #42586f; font: 11px/1.8 "Cascadia Code", Consolas, monospace; }
+    .method-card p { color: #687b91; font-size: 10px; line-height: 1.7; margin: 9px 0 0; }
+    .empty-state { padding: 31px 15px; text-align: center; color: #8695a5; font-size: 11px; }
+    .empty-state strong { display: block; color: #53687f; font-size: 12px; margin-bottom: 4px; }
+    .toast { position: fixed; right: 22px; bottom: 20px; z-index: 10; max-width: min(420px, calc(100vw - 32px)); padding: 11px 15px; border-radius: 9px; color: #fff; background: #264b5e; box-shadow: 0 5px 18px #183b5638; font-size: 12px; opacity: 0; pointer-events: none; transform: translateY(5px); transition: .2s; }
+    .toast.show { opacity: 1; transform: none; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    @media (max-width: 1100px) {
+      .sidebar { width: 218px; flex-basis: 218px; }
+      .content { padding-left: 23px; padding-right: 23px; }
+      .topbar { padding: 0 23px; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .chart-grid { grid-template-columns: minmax(0, 1.2fr) minmax(250px, 1fr); }
+    }
+    @media (max-width: 760px) {
+      .app { display: block; }
+      .sidebar { width: 100%; padding: 12px 13px 9px; display: block; }
+      .brand { padding: 0 4px 11px; }
+      .brand-mark { width: 33px; height: 33px; }
+      .brand-name { font-size: 15px; }
+      .brand-caption, .nav-label, .sidebar-spacer, .sidebar-note { display: none; }
+      .nav-list { display: flex; overflow-x: auto; gap: 4px; padding-bottom: 2px; }
+      .nav-button { width: auto; min-width: max-content; padding: 8px 9px; font-size: 11px; }
+      .nav-button.active::before { display: none; }
+      .nav-button svg { width: 15px; height: 15px; }
+      .topbar { min-height: 56px; padding: 0 15px; }
+      .topbar-context { display: none; }
+      .content { padding: 18px 14px 26px; }
+      .chart-grid, .bottom-grid, .two-col { grid-template-columns: 1fr; }
+      .insight-grid { grid-template-columns: 1fr; }
+      .insight-card { min-height: 0; }
+      .method-grid { grid-template-columns: 1fr; }
+      .page-heading { align-items: start; }
+      .page-heading .small-meta { display: none; }
+      h1 { font-size: 20px; }
+      .filters { gap: 9px; padding: 11px; }
+      .filter-field { flex: 1 1 125px; }
+      .filter-divider { display: none; }
+      .clear-button { align-self: end; }
+      .quality-stats { gap: 7px; }
+      .quality-stat { padding: 11px 10px; }
+      .quality-stat strong { font-size: 18px; }
+      .rules-grid { grid-template-columns: 1fr; }
+      .table-topline { align-items: start; flex-direction: column; }
+      .table-tools { width: 100%; }
+      .search-input { flex: 1; width: auto; }
+      .kpi-card { min-height: 112px; padding: 12px; }
+      .kpi-value { font-size: 21px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="เมนูหลัก">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M13.2 2.8 5.9 13h5.2l-.4 8.2L18.1 11h-5.3l.4-8.2Z" fill="currentColor"/></svg>
+        </div>
+        <div><div class="brand-name">มิเตอร์</div><div class="brand-caption">CLASSROOM ENERGY</div></div>
+      </div>
+      <div class="nav-label">WORKSPACE</div>
+      <nav class="nav-list" id="main-nav">
+        <button class="nav-button active" data-page="overview" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/></svg>ภาพรวม</button>
+        <button class="nav-button" data-page="quality"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 20 6v5c0 5-3.4 8.2-8 10-4.6-1.8-8-5-8-10V6l8-3Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>คุณภาพข้อมูล</button>
+        <button class="nav-button" data-page="records"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>รายการข้อมูล</button>
+        <button class="nav-button" data-page="insights"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V5M4 19h17"/><path d="m7 15 4-4 3 2 6-7"/><path d="M17 6h3v3"/></svg>ข้อค้นพบ</button>
+        <button class="nav-button" data-page="method"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 4.4 1.6c-1.1 1-2 1.3-2 3M12 17.5v.1"/></svg>วิธีคำนวณ</button>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-note"><strong>ชุดข้อมูลฝึกวิเคราะห์</strong>ข้อมูลจำลองเพื่อการศึกษา<br>ไม่ใช่ข้อมูลเรียลไทม์</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-context">ชุดฝึกการใช้ไฟฟ้าในห้องเรียน <span aria-hidden="true">/</span> <strong id="current-page-label">ภาพรวม</strong></div>
+        <div class="topbar-right">
+          <span class="source-pill"><i class="source-dot"></i><span id="source-name">ข้อมูลต้นฉบับ 10 รายการ</span></span>
+          <label class="upload-button" for="csv-upload">นำเข้า CSV</label>
+          <input class="sr-only" id="csv-upload" type="file" accept=".csv,text/csv">
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="filters" aria-label="ตัวกรองข้อมูล">
+          <div class="filter-field"><label for="date-from">ตั้งแต่วันที่</label><input id="date-from" type="date"></div>
+          <div class="filter-field"><label for="date-to">ถึงวันที่</label><input id="date-to" type="date"></div>
+          <div class="filter-divider" aria-hidden="true"></div>
+          <div class="filter-field"><label for="room-filter">ห้อง</label><select id="room-filter"><option value="">ทุกห้อง</option></select></div>
+          <div class="filter-field"><label for="type-filter">ประเภทห้อง</label><select id="type-filter"><option value="">ทุกประเภท</option></select></div>
+          <button class="clear-button" id="clear-filters">ล้างตัวกรอง</button>
+        </section>
+
+        <section class="page active" id="page-overview" aria-labelledby="overview-title">
+          <div class="page-heading">
+            <div><div class="eyebrow">ENERGY OVERVIEW</div><h1 id="overview-title">ภาพรวมการใช้พลังงาน</h1><p class="page-subtitle">สรุปจากรายการที่ผ่านกฎตรวจสอบ — รายการใช้ไฟสูงยังคงอยู่ในการคำนวณ</p></div>
+            <span class="small-meta" id="overview-range"></span>
+          </div>
+          <div class="kpi-grid" id="kpi-grid"></div>
+          <div class="chart-grid">
+            <article class="card">
+              <div class="card-heading"><div><div class="card-title">แนวโน้มหน่วยไฟรายวัน</div><div class="card-subtitle">หน่วยไฟที่ผ่านเกณฑ์ · แสดงเฉพาะวันที่มีรายการในข้อมูล</div></div><div class="legend"><span><i></i>หน่วยไฟ (kWh)</span></div></div>
+              <div id="trend-chart"></div>
+            </article>
+            <article class="card">
+              <div class="card-heading"><div><div class="card-title">หน่วยไฟรวมรายห้อง</div><div class="card-subtitle">รวมรายการที่ผ่านเกณฑ์ (kWh)</div></div></div>
+              <div id="room-chart"></div>
+            </article>
+          </div>
+          <div class="bottom-grid">
+            <article class="card">
+              <div class="card-heading"><div><div class="card-title">อัตราการใช้ไฟต่อชั่วโมงรายห้อง</div><div class="card-subtitle">ผลรวม kWh ÷ ผลรวมชั่วโมงของแต่ละห้อง</div></div><div class="legend"><span><i class="legend-blue"></i>kWh/ชั่วโมง</span></div></div>
+              <div id="rate-chart"></div>
+            </article>
+            <article class="card">
+              <div class="card-heading"><div><div class="card-title">สัญญาณที่ควรตรวจสอบ</div><div class="card-subtitle">ข้อสังเกตเบื้องต้นจากชุดข้อมูลนี้</div></div></div>
+              <div id="overview-alert"></div>
+            </article>
+          </div>
+          <div class="notice">ตัวชี้วัดทั้งหมดใช้ตัวกรองวันที่ ห้อง และประเภทห้องชุดเดียวกัน · ไม่นับรายการ “ผิดเงื่อนไข” ในยอดหลัก และไม่ถือว่าวันที่ไม่มีรายการเป็นศูนย์</div>
+        </section>
+
+        <section class="page" id="page-quality" aria-labelledby="quality-title">
+          <div class="page-heading">
+            <div><div class="eyebrow">DATA QUALITY</div><h1 id="quality-title">ตรวจสอบคุณภาพข้อมูล</h1><p class="page-subtitle">แยกข้อมูลที่ใช้ได้ สัญญาณที่ควรตรวจสอบ และรายการที่ผิดเงื่อนไขอย่างชัดเจน</p></div>
+            <span class="small-meta" id="quality-scope"></span>
+          </div>
+          <div class="quality-stats" id="quality-stats"></div>
+          <article class="card section-card">
+            <div class="card-heading"><div><div class="card-title">กฎตรวจสอบที่ใช้</div><div class="card-subtitle">กฎเดียวกันใช้กับทุกรายการ และคงข้อมูลต้นฉบับไว้ตรวจสอบย้อนหลัง</div></div></div>
+            <div class="rules-grid">
+              <div class="rule"><span class="rule-number">1</span><p><strong>ผิดเงื่อนไข:</strong> ช่องจำเป็นว่าง/ไม่ใช่ตัวเลข, ค่าติดลบ, ชั่วโมงไม่มากกว่า 0 หรือมิเตอร์หลังน้อยกว่ามิเตอร์ก่อน — ตัดออกจากผลคำนวณ</p></div>
+              <div class="rule"><span class="rule-number">2</span><p><strong>ต้องตรวจสอบ:</strong> อัตรา kWh/ชั่วโมงสูงกว่า 2 เท่าของค่ามัธยฐานรายการที่ผ่านกฎ — ยังรวมในผลหลัก ไม่สรุปว่าเป็นข้อมูลผิด</p></div>
+              <div class="rule"><span class="rule-number">3</span><p><strong>ใช้งานได้:</strong> ผ่านเงื่อนไขข้อมูลทั้งหมด และไม่เข้าเกณฑ์สัญญาณอัตราการใช้ไฟสูง</p></div>
+              <div class="rule"><span class="rule-number">4</span><p><strong>ขอบเขต:</strong> สถานะคำนวณจากชุดข้อมูลปัจจุบันก่อนใช้ตัวกรอง ตัวกรองเปลี่ยนตัวเลขที่แสดงแต่ไม่เปลี่ยนเกณฑ์สถานะ</p></div>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card-heading"><div><div class="card-title">ตารางคุณภาพข้อมูล</div><div class="card-subtitle">มีเหตุผลและแนวทางตรวจสอบสำหรับรายการที่ถูกแจ้งเตือน</div></div><span class="count-label" id="quality-count"></span></div>
+            <div class="table-wrap" id="quality-table"></div>
+          </article>
+        </section>
+
+        <section class="page" id="page-records" aria-labelledby="records-title">
+          <div class="page-heading">
+            <div><div class="eyebrow">RECORDS</div><h1 id="records-title">รายการข้อมูลทั้งหมด</h1><p class="page-subtitle">ดูค่าต้นฉบับ ผลคำนวณ และสถานะตรวจสอบในตารางเดียว</p></div>
+            <button class="button-secondary" id="export-csv">ส่งออกผลกรองเป็น CSV</button>
+          </div>
+          <article class="card">
+            <div class="table-topline">
+              <div><div class="card-title">ข้อมูลรายการใช้ไฟฟ้า</div><div class="card-subtitle" id="records-scope"></div></div>
+              <div class="table-tools"><input id="table-search" class="search-input" type="search" placeholder="ค้นหารหัสหรือชื่อห้อง" aria-label="ค้นหารหัสหรือชื่อห้อง"><span id="records-count" class="count-label"></span></div>
+            </div>
+            <div class="table-wrap" id="records-table"></div>
+            <div class="notice">ตารางและไฟล์ CSV แสดงทุกรายการตามตัวกรอง รวมรายการที่ถูกแยกออก พร้อมสถานะและเหตุผล</div>
+          </article>
+        </section>
+
+        <section class="page" id="page-insights" aria-labelledby="insights-title">
+          <div class="page-heading">
+            <div><div class="eyebrow">FINDINGS & ACTIONS</div><h1 id="insights-title">ข้อค้นพบและข้อเสนอแนะ</h1><p class="page-subtitle">ข้อสรุปผูกกับข้อมูลที่ผ่านเกณฑ์และสัญญาณแจ้งเตือนในชุดข้อมูลที่เลือก</p></div>
+          </div>
+          <div class="insight-grid" id="insight-cards"></div>
+          <div class="two-col">
+            <article class="card">
+              <div class="card-heading"><div><div class="card-title">ข้อเสนอแนะ</div><div class="card-subtitle">ขั้นตอนถัดไปที่ทำได้จริง</div></div></div>
+              <ol class="bullet-list" id="recommendations"></ol>
+            </article>
+            <article class="card">
+              <div class="card-heading"><div><div class="card-title">ข้อจำกัดของการวิเคราะห์</div><div class="card-subtitle">ใช้ประกอบการตีความผล ไม่ใช่ข้อสรุปเชิงสาเหตุ</div></div></div>
+              <div class="note-box warning" id="limitation"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-method" aria-labelledby="method-title">
+          <div class="page-heading">
+            <div><div class="eyebrow">METHOD & VALIDATION</div><h1 id="method-title">วิธีคำนวณและขอบเขต</h1><p class="page-subtitle">สูตร หน่วย กฎคัดกรอง และตัวอย่างตรวจสอบตัวเลข</p></div>
+          </div>
+          <div class="method-grid">
+            <article class="card method-card"><h3>ตัวชี้วัด</h3><div class="formula">หน่วยไฟที่ใช้ (kWh) = มิเตอร์หลัง − มิเตอร์ก่อน<br>ค่าไฟ (บาท) = kWh × ค่าไฟต่อหน่วย<br>อัตรารวม (kWh/ชม.) = Σ kWh ÷ Σ ชั่วโมง</div><p>คำนวณจากรายการใช้งานได้และรายการต้องตรวจสอบ ไม่รวมรายการผิดเงื่อนไข หารด้วยผลรวมชั่วโมงเพื่อไม่ให้น้ำหนักแต่ละรายการเท่ากันโดยไม่เหมาะสม</p></article>
+            <article class="card method-card"><h3>การจัดการข้อมูลผิดเงื่อนไข</h3><div class="formula">มิเตอร์หลัง &lt; มิเตอร์ก่อน → ผิดเงื่อนไข<br>ค่าไฟต่อหน่วย &lt; 0 → ผิดเงื่อนไข<br>อัตราสูงผิดปกติ → แจ้งตรวจสอบ แต่ยังรวม</div><p>วันที่แสดงเป็นวัน/เดือน/ปี (ตีความข้อมูล 11/1/2026 เป็น 1 พ.ย. 2569) เพราะลำดับรายการในไฟล์เป็นวันที่ 1–3 พฤศจิกายน</p></article>
+            <article class="card method-card"><h3>หลักฐานตรวจสอบตัวเลข (ข้อมูลเต็มชุด)</h3><div class="formula" id="validation-evidence"></div><p>ค่าเหล่านี้ใช้ตรวจเทียบผลในเว็บ โดยไม่นำ E009 และ E010 มาคำนวณ แต่ยังเก็บไว้ในตารางข้อมูลดิบ</p></article>
+            <article class="card method-card"><h3>คุณภาพและข้อจำกัดของข้อมูล</h3><div class="formula">จำนวนที่นำมาคำนวณ: 8 จาก 10 รายการ<br>จำนวนผิดเงื่อนไข: 2 รายการ<br>สัญญาณให้ตรวจสอบ: 1 รายการ</div><p>เป็นข้อมูลจำลองเพียง 3 วันที่บันทึก ไม่มีข้อมูลกำลังไฟ พื้นที่ห้อง หรือการยืนยันมิเตอร์จริง จึงใช้ชี้จุดตรวจสอบเบื้องต้น ไม่ใช้ตัดสินประสิทธิภาพหรือหาความสัมพันธ์เชิงสาเหตุ</p></article>
+          </div>
+          <article class="card section-card" style="margin-top:14px">
+            <div class="card-heading"><div><div class="card-title">รายการส่งมอบในโฟลเดอร์</div><div class="card-subtitle">เปิดไฟล์ index.html ได้โดยตรง ไม่ต้องติดตั้งแพ็กเกจหรือสมัครสมาชิก</div></div></div>
+            <ul class="bullet-list"><li>classroom_electricity_dirty_10.csv — ข้อมูลต้นฉบับ</li><li>data_quality_results.csv — ผลตรวจสอบทั้ง 10 รายการ พร้อมเหตุผลและคำแนะนำ</li><li>index.html — เว็บไซต์และการคำนวณแบบออฟไลน์</li><li>README.md — วิธีเปิดใช้งานและรายการทดสอบ</li></ul>
+          </article>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    "use strict";
+    const SOURCE_CSV = `รหัสบันทึก,วันที่,ห้อง,ประเภทห้อง,จำนวนผู้ใช้ (คน),ชั่วโมงใช้งาน,มิเตอร์ก่อน (หน่วย),มิเตอร์หลัง (หน่วย),ค่าไฟต่อหน่วย (บาท)
+E001,11/1/2026,คอมพิวเตอร์ 1,ห้องปฏิบัติการ,25,6,1200,1248,4.5
+E002,11/1/2026,คอมพิวเตอร์ 2,ห้องปฏิบัติการ,20,5,2100,2140,4.5
+E003,11/1/2026,ทฤษฎี 1,ห้องเรียน,30,6,800,818,4.5
+E004,11/1/2026,ทฤษฎี 2,ห้องเรียน,28,5,950,965,4.5
+E005,11/2/2026,คอมพิวเตอร์ 1,ห้องปฏิบัติการ,24,6,1248,1296,4.5
+E006,11/2/2026,คอมพิวเตอร์ 2,ห้องปฏิบัติการ,20,5,2140,2340,4.5
+E007,11/2/2026,ทฤษฎี 1,ห้องเรียน,30,6,818,838,4.5
+E008,11/2/2026,ทฤษฎี 2,ห้องเรียน,26,5,965,981,4.5
+E009,11/3/2026,คอมพิวเตอร์ 1,ห้องปฏิบัติการ,25,6,1296,1280,4.5
+E010,11/3/2026,ทฤษฎี 1,ห้องเรียน,30,6,838,858,-4.5`;
+    const HEADERS = ["รหัสบันทึก", "วันที่", "ห้อง", "ประเภทห้อง", "จำนวนผู้ใช้ (คน)", "ชั่วโมงใช้งาน", "มิเตอร์ก่อน (หน่วย)", "มิเตอร์หลัง (หน่วย)", "ค่าไฟต่อหน่วย (บาท)"];
+    const NUMBER_FIELDS = [4, 5, 6, 7, 8];
+    const PAGE_LABELS = { overview: "ภาพรวม", quality: "คุณภาพข้อมูล", records: "รายการข้อมูล", insights: "ข้อค้นพบ", method: "วิธีคำนวณ" };
+    const numberFormat = new Intl.NumberFormat("th-TH", { maximumFractionDigits: 2 });
+    const currencyFormat = new Intl.NumberFormat("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    let rows = [];
+    let filteredRows = [];
+    let toastTimer;
+
+    function parseCsv(text) {
+      const matrix = [];
+      let row = [];
+      let cell = "";
+      let quoted = false;
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (quoted) {
+          if (char === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+          else if (char === '"') quoted = false;
+          else cell += char;
+        } else if (char === '"') quoted = true;
+        else if (char === ",") { row.push(cell); cell = ""; }
+        else if (char === "\n" || char === "\r") {
+          if (char === "\r" && text[i + 1] === "\n") i++;
+          row.push(cell);
+          if (row.some(value => value.trim() !== "")) matrix.push(row);
+          row = []; cell = "";
+        } else cell += char;
+      }
+      row.push(cell);
+      if (row.some(value => value.trim() !== "")) matrix.push(row);
+      return matrix;
+    }
+
+    function toIsoDate(raw) {
+      const value = String(raw ?? "").trim();
+      const iso = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
+      const slash = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (!slash) return "";
+      const month = Number(slash[1]), day = Number(slash[2]), year = Number(slash[3]);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return "";
+      return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    }
+
+    function loadCsv(text) {
+      const matrix = parseCsv(text);
+      if (matrix.length < 2) throw new Error("ไม่พบแถวข้อมูลในไฟล์ CSV");
+      const header = matrix[0].map(value => value.trim().replace(/^\uFEFF/, ""));
+      const indices = HEADERS.map(name => header.indexOf(name));
+      if (indices.some(index => index < 0)) throw new Error("หัวตารางไม่ครบหรือไม่ตรงรูปแบบที่รองรับ กรุณาใช้ไฟล์ CSV ชุดนี้");
+      const parsed = matrix.slice(1).map((cells, index) => {
+        const raw = {};
+        HEADERS.forEach((name, column) => { raw[name] = (cells[indices[column]] ?? "").trim(); });
+        const record = {
+          id: raw[HEADERS[0]], rawDate: raw[HEADERS[1]], date: toIsoDate(raw[HEADERS[1]]),
+          room: raw[HEADERS[2]], roomType: raw[HEADERS[3]], raw,
+          users: parseNumeric(raw[HEADERS[4]]), hours: parseNumeric(raw[HEADERS[5]]),
+          meterBefore: parseNumeric(raw[HEADERS[6]]), meterAfter: parseNumeric(raw[HEADERS[7]]),
+          price: parseNumeric(raw[HEADERS[8]]), sourceIndex: index
+        };
+        return record;
+      });
+      rows = classifyRows(parsed);
+      populateFilters();
+      render();
+    }
+
+    function parseNumeric(value) {
+      if (value === "" || value == null) return NaN;
+      const parsed = Number(value.replace(/,/g, ""));
+      return Number.isFinite(parsed) ? parsed : NaN;
+    }
+
+    function classifyRows(records) {
+      const computed = records.map(record => {
+        const problems = [];
+        if (!record.id || !record.date || !record.room || !record.roomType) problems.push("ข้อมูลรหัส วันที่ ห้อง หรือประเภทห้องว่าง/ไม่ถูกต้อง");
+        const labels = [
+          [record.users, "จำนวนผู้ใช้"], [record.hours, "ชั่วโมงใช้งาน"],
+          [record.meterBefore, "มิเตอร์ก่อน"], [record.meterAfter, "มิเตอร์หลัง"],
+          [record.price, "ค่าไฟต่อหน่วย"]
+        ];
+        labels.forEach(([value, label]) => {
+          if (!Number.isFinite(value)) problems.push(`${label} ว่างหรือไม่ใช่ตัวเลข`);
+          else if (value < 0) problems.push(`${label} มีค่าติดลบ`);
+        });
+        if (Number.isFinite(record.hours) && record.hours <= 0) problems.push("ชั่วโมงใช้งานต้องมากกว่า 0");
+        if (Number.isFinite(record.meterBefore) && Number.isFinite(record.meterAfter) && record.meterAfter < record.meterBefore) problems.push("มิเตอร์หลังน้อยกว่ามิเตอร์ก่อน");
+        const kwh = Number.isFinite(record.meterBefore) && Number.isFinite(record.meterAfter) ? record.meterAfter - record.meterBefore : NaN;
+        const rate = Number.isFinite(kwh) && Number.isFinite(record.hours) && record.hours > 0 ? kwh / record.hours : NaN;
+        const cost = Number.isFinite(kwh) && Number.isFinite(record.price) ? kwh * record.price : NaN;
+        return { ...record, kwh, rate, cost, status: problems.length ? "invalid" : "valid", reasons: problems, recommendation: "" };
+      });
+      const validRates = computed.filter(record => record.status === "valid").map(record => record.rate).sort((a, b) => a - b);
+      const median = validRates.length ? (validRates.length % 2 ? validRates[(validRates.length - 1) / 2] : (validRates[validRates.length / 2 - 1] + validRates[validRates.length / 2]) / 2) : NaN;
+      computed.forEach(record => {
+        if (record.status === "invalid") {
+          record.recommendation = "ตรวจสอบต้นฉบับหรืออ่านมิเตอร์ซ้ำ แล้วแก้ข้อมูลก่อนนำไปคำนวณ";
+        } else if (Number.isFinite(median) && record.rate > median * 2) {
+          record.status = "review";
+          record.reasons.push(`อัตรา ${formatNumber(record.rate)} kWh/ชั่วโมง สูงกว่า 2 เท่าของค่ามัธยฐาน (${formatNumber(median * 2)})`);
+          record.recommendation = "ตรวจสอบช่วงเวลาใช้ห้อง ค่ามิเตอร์ และการใช้งานอุปกรณ์ก่อนสรุป";
+        } else {
+          record.recommendation = "ผ่านกฎตรวจสอบพื้นฐาน; เก็บเป็นข้อมูลอ้างอิง";
+        }
+      });
+      return computed;
+    }
+
+    function formatNumber(value, digits = 2) {
+      return Number.isFinite(value) ? new Intl.NumberFormat("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: digits }).format(value) : "—";
+    }
+    function formatCurrency(value) { return Number.isFinite(value) ? currencyFormat.format(value) : "—"; }
+    function formatDate(iso) {
+      if (!iso) return "—";
+      const [year, month, day] = iso.split("-").map(Number);
+      return new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(year, month - 1, day)));
+    }
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+    }
+    function statusMarkup(record) {
+      const labels = { valid: "ใช้งานได้", review: "ต้องตรวจสอบ", invalid: "ผิดเงื่อนไข" };
+      return `<span class="status status-${record.status}">${labels[record.status]}</span>`;
+    }
+    function populateFilters() {
+      const room = document.getElementById("room-filter");
+      const type = document.getElementById("type-filter");
+      const previousRoom = room.value, previousType = type.value;
+      room.innerHTML = '<option value="">ทุกห้อง</option>' + [...new Set(rows.map(item => item.room).filter(Boolean))].sort((a,b) => a.localeCompare(b, "th")).map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
+      type.innerHTML = '<option value="">ทุกประเภท</option>' + [...new Set(rows.map(item => item.roomType).filter(Boolean))].sort((a,b) => a.localeCompare(b, "th")).map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
+      room.value = [...room.options].some(option => option.value === previousRoom) ? previousRoom : "";
+      type.value = [...type.options].some(option => option.value === previousType) ? previousType : "";
+    }
+    function getFilteredRows() {
+      const from = document.getElementById("date-from").value;
+      const to = document.getElementById("date-to").value;
+      const room = document.getElementById("room-filter").value;
+      const type = document.getElementById("type-filter").value;
+      return rows.filter(record => (!from || record.date >= from) && (!to || record.date <= to) && (!room || record.room === room) && (!type || record.roomType === type));
+    }
+    function render() {
+      filteredRows = getFilteredRows();
+      document.getElementById("source-name").textContent = `ข้อมูล${rows.length} รายการ`;
+      renderOverview();
+      renderQuality();
+      renderRecords();
+      renderInsights();
+      renderMethod();
+    }
+    function totals(records) {
+      const included = records.filter(record => record.status !== "invalid");
+      const kwh = included.reduce((sum, record) => sum + record.kwh, 0);
+      const cost = included.reduce((sum, record) => sum + record.cost, 0);
+      const hours = included.reduce((sum, record) => sum + record.hours, 0);
+      return { included, kwh, cost, hours, rate: hours > 0 ? kwh / hours : NaN, issues: records.filter(record => record.status !== "valid").length, invalid: records.filter(record => record.status === "invalid").length, review: records.filter(record => record.status === "review").length };
+    }
+    function iconSvg(name) {
+      const icons = {
+        energy: '<path d="m13 2-8 11h6l-.5 9L19 10h-6l.5-8Z"/>',
+        cost: '<path d="M12 2v20M17 5.5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+        rate: '<path d="M4 19V5M4 19h17"/><path d="m7 15 4-4 3 2 6-7"/>',
+        alert: '<path d="M12 3 2.8 19h18.4L12 3Z"/><path d="M12 9v4m0 3h.01"/>'
+      };
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
+    }
+    function renderOverview() {
+      const metrics = totals(filteredRows);
+      const kpis = [
+        ["หน่วยไฟรวม", `${formatNumber(metrics.kwh)} <small>kWh</small>`, `${metrics.included.length} รายการที่นำมาคำนวณ`, "energy", ""],
+        ["ค่าไฟรวม", `${formatCurrency(metrics.cost)} <small>บาท</small>`, "คำนวณจากรายการที่ผ่านเกณฑ์", "cost", "blue"],
+        ["อัตราใช้ไฟเฉลี่ยรวม", `${formatNumber(metrics.rate)} <small>kWh/ชม.</small>`, "ผลรวมหน่วยไฟ ÷ ผลรวมชั่วโมง", "rate", "amber"],
+        ["รายการที่มีปัญหา", `${metrics.issues} <small>รายการ</small>`, `${metrics.review} ต้องตรวจสอบ · ${metrics.invalid} ผิดเงื่อนไข`, "alert", "red"]
+      ];
+      document.getElementById("kpi-grid").innerHTML = kpis.map(([label, value, foot, icon, color]) => `<article class="kpi-card"><div class="kpi-top"><span class="kpi-label">${label}</span><span class="kpi-icon ${color}">${iconSvg(icon)}</span></div><div class="kpi-value">${value}</div><div class="kpi-foot">${foot}</div></article>`).join("");
+      const dates = [...new Set(filteredRows.map(record => record.date).filter(Boolean))].sort();
+      const daily = dates.map(date => {
+        const dateRows = filteredRows.filter(record => record.date === date);
+        const included = dateRows.filter(record => record.status !== "invalid");
+        return { date, kwh: included.reduce((sum, item) => sum + item.kwh, 0), count: included.length, rawCount: dateRows.length };
+      });
+      document.getElementById("trend-chart").innerHTML = daily.length ? drawTrend(daily) : emptyChart("ไม่พบข้อมูลในช่วงวันที่เลือก");
+      const roomNames = [...new Set(metrics.included.map(record => record.room))].sort((a, b) => a.localeCompare(b, "th"));
+      const roomTotals = roomNames.map(room => {
+        const list = metrics.included.filter(record => record.room === room);
+        const kwh = list.reduce((sum, item) => sum + item.kwh, 0);
+        const hours = list.reduce((sum, item) => sum + item.hours, 0);
+        return { room, kwh, rate: hours > 0 ? kwh / hours : 0 };
+      });
+      document.getElementById("room-chart").innerHTML = roomTotals.length ? drawBars(roomTotals, "kwh", "bar") : emptyChart("ไม่มีรายการที่นำมาคำนวณ");
+      document.getElementById("rate-chart").innerHTML = roomTotals.length ? drawBars(roomTotals, "rate", "bar-blue") : emptyChart("ไม่มีรายการที่นำมาคำนวณ");
+      const reviewRecord = filteredRows.find(record => record.status === "review");
+      const invalidIds = filteredRows.filter(record => record.status === "invalid").map(record => record.id);
+      document.getElementById("overview-alert").innerHTML = filteredRows.length ? `
+        <div class="note-box ${reviewRecord || invalidIds.length ? "warning" : ""}">
+          ${reviewRecord ? `<strong>${escapeHtml(reviewRecord.id)} · ${escapeHtml(reviewRecord.room)}</strong><br>ใช้อัตรา ${formatNumber(reviewRecord.rate)} kWh/ชั่วโมง สูงกว่าค่ากลางของชุดข้อมูล แต่ยังรวมในยอดหลัก<br>` : ""}
+          ${invalidIds.length ? `<strong>แยกออกจากยอดหลัก: ${invalidIds.map(escapeHtml).join(", ")}</strong><br>ตรวจค่ามิเตอร์หรือค่าไฟติดลบก่อนนำกลับมาคำนวณ` : ""}
+          ${!reviewRecord && !invalidIds.length ? "<strong>ไม่พบรายการแจ้งเตือน</strong><br>ทุกรายการที่เลือกผ่านกฎตรวจสอบปัจจุบัน" : ""}
+        </div>
+        <div class="notice">เกณฑ์อัตราสูงเป็นสัญญาณตรวจสอบ ไม่ใช่หลักฐานว่าข้อมูลผิด</div>` : emptyMessage("ไม่พบข้อมูล", "ลองปรับวันที่หรือใช้ปุ่มล้างตัวกรอง");
+      const datesLabel = dates.length ? `${formatDate(dates[0])} – ${formatDate(dates[dates.length - 1])}` : "ไม่มีช่วงวันที่";
+      document.getElementById("overview-range").textContent = `${datesLabel} · ${filteredRows.length} รายการตามตัวกรอง`;
+    }
+    function emptyMessage(title, text) { return `<div class="empty-state"><strong>${title}</strong>${text}</div>`; }
+    function emptyChart(text) { return `<div class="empty-state">${text}</div>`; }
+    function drawTrend(points) {
+      const width = 620, height = 190, left = 43, right = 18, top = 14, bottom = 35;
+      const plotW = width - left - right, plotH = height - top - bottom;
+      const max = Math.max(...points.map(point => point.kwh), 1);
+      const ceiling = Math.ceil(max / 50) * 50 || 50;
+      const x = index => points.length === 1 ? left + plotW / 2 : left + index * plotW / (points.length - 1);
+      const y = value => top + plotH - value / ceiling * plotH;
+      let grid = "";
+      for (let step = 0; step <= 4; step++) {
+        const value = ceiling * step / 4;
+        grid += `<line class="grid-line" x1="${left}" y1="${y(value)}" x2="${width - right}" y2="${y(value)}"/><text x="${left - 8}" y="${y(value) + 3}" text-anchor="end">${formatNumber(value, 0)}</text>`;
+      }
+      const path = points.map((point, index) => `${index ? "L" : "M"} ${x(index)} ${y(point.kwh)}`).join(" ");
+      const pointsMarkup = points.map((point, index) => `<circle cx="${x(index)}" cy="${y(point.kwh)}" r="4" fill="#fff" stroke="#39a994" stroke-width="2"><title>${formatDate(point.date)}: ${formatNumber(point.kwh)} kWh, ${point.count} รายการที่นำมาคำนวณ (${point.rawCount} รายการดิบ)</title></circle><text x="${x(index)}" y="${height - 16}" text-anchor="middle">${formatDate(point.date).replace(" พ.ศ. ", " ")}</text><text x="${x(index)}" y="${Math.max(10, y(point.kwh) - 9)}" text-anchor="middle" fill="#507467">${formatNumber(point.kwh, 0)} · ${point.count} รายการ</text>`).join("");
+      return `<svg class="chart trend-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="กราฟแนวโน้มหน่วยไฟรายวัน">${grid}<line class="axis-line" x1="${left}" y1="${top + plotH}" x2="${width - right}" y2="${top + plotH}"/><path d="${path}" fill="none" stroke="#39a994" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${pointsMarkup}</svg>`;
+    }
+    function drawBars(items, key, color) {
+      const width = 490, height = 188, left = 40, right = 12, top = 13, bottom = 44;
+      const plotW = width - left - right, plotH = height - top - bottom;
+      const max = Math.max(...items.map(item => item[key]), 1);
+      const ceiling = key === "kwh" ? Math.ceil(max / 50) * 50 || 50 : Math.ceil(max / 5) * 5 || 5;
+      const barW = Math.min(42, plotW / items.length * .48);
+      let marks = "";
+      for (let step = 0; step <= 4; step++) {
+        const value = ceiling * step / 4, y = top + plotH - value / ceiling * plotH;
+        marks += `<line class="grid-line" x1="${left}" y1="${y}" x2="${width - right}" y2="${y}"/><text x="${left - 7}" y="${y + 3}" text-anchor="end">${formatNumber(value, 0)}</text>`;
+      }
+      const bars = items.map((item, index) => {
+        const slot = plotW / items.length, cx = left + slot * (index + .5);
+        const barH = item[key] / ceiling * plotH;
+        const value = formatNumber(item[key]);
+        return `<rect class="bar ${color}" x="${cx - barW / 2}" y="${top + plotH - barH}" width="${barW}" height="${barH}" rx="4"><title>${escapeHtml(item.room)}: ${value} ${key === "kwh" ? "kWh" : "kWh/ชั่วโมง"}</title></rect><text x="${cx}" y="${top + plotH - barH - 6}" text-anchor="middle">${value}</text><text x="${cx}" y="${height - 18}" text-anchor="middle">${escapeHtml(item.room)}</text>`;
+      }).join("");
+      return `<svg class="chart bar-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${key === "kwh" ? "กราฟหน่วยไฟรวมรายห้อง" : "กราฟอัตราใช้ไฟต่อชั่วโมงรายห้อง"}">${marks}<line class="axis-line" x1="${left}" y1="${top + plotH}" x2="${width - right}" y2="${top + plotH}"/>${bars}</svg>`;
+    }
+    function renderQuality() {
+      const metrics = totals(filteredRows);
+      document.getElementById("quality-stats").innerHTML = `<div class="quality-stat valid"><span>ใช้งานได้ · รวมในยอด</span><strong>${metrics.included.length} รายการ</strong></div><div class="quality-stat review"><span>ต้องตรวจสอบ · ยังคงรวมในยอด</span><strong>${metrics.review} รายการ</strong></div><div class="quality-stat invalid"><span>ผิดเงื่อนไข · แยกออกจากยอด</span><strong>${metrics.invalid} รายการ</strong></div>`;
+      const issues = filteredRows.filter(record => record.status !== "valid");
+      document.getElementById("quality-count").textContent = `${issues.length} รายการแจ้งเตือน · ${filteredRows.length} รายการตามตัวกรอง`;
+      document.getElementById("quality-scope").textContent = `ตรวจสอบ ${filteredRows.length} รายการ`;
+      document.getElementById("quality-table").innerHTML = issues.length ? `<table class="data-table"><thead><tr><th>รหัส</th><th>ห้อง · วันที่</th><th>ค่าที่สงสัย</th><th>สถานะ</th><th>เหตุผล</th><th>แนวทางตรวจสอบ</th><th>ข้อมูลดิบ</th></tr></thead><tbody>${issues.map(record => {
+        const suspicious = record.status === "review" ? `${formatNumber(record.rate)} kWh/ชม.` : record.reasons.map(reason => escapeHtml(reason)).join("<br>");
+        return `<tr><td><strong>${escapeHtml(record.id || "—")}</strong></td><td>${escapeHtml(record.room || "—")}<br><span class="muted-cell">${formatDate(record.date)}</span></td><td class="problem-text">${suspicious}</td><td>${statusMarkup(record)}</td><td class="problem-text">${record.reasons.map(escapeHtml).join("<br>")}</td><td class="problem-text">${escapeHtml(record.recommendation)}</td><td><button class="button-secondary raw-button" data-id="${escapeHtml(record.id)}">ดูต้นฉบับ</button></td></tr>`;
+      }).join("")}</tbody></table>` : emptyMessage("ไม่พบรายการแจ้งเตือน", filteredRows.length ? "ทุกรายการที่เลือกผ่านกฎตรวจสอบ" : "ลองปรับตัวกรอง");
+      document.querySelectorAll(".raw-button").forEach(button => button.addEventListener("click", () => {
+        const record = rows.find(item => item.id === button.dataset.id);
+        if (record) showToast(`${record.id} · ${HEADERS.map(header => `${header}: ${record.raw[header] || "—"}`).join(" | ")}`, 6000);
+      }));
+    }
+    function recordTableMarkup(records) {
+      if (!records.length) return emptyMessage("ไม่พบข้อมูล", "ลองปรับตัวกรองหรือคำค้นหา");
+      return `<table class="data-table"><thead><tr><th>รหัส</th><th>วันที่</th><th>ห้อง · ประเภท</th><th>ผู้ใช้</th><th>ชั่วโมง</th><th>มิเตอร์ก่อน</th><th>มิเตอร์หลัง</th><th>หน่วยไฟ</th><th>ค่าไฟ/หน่วย</th><th>ค่าไฟ</th><th>kWh/ชม.</th><th>สถานะ</th><th>เหตุผล</th></tr></thead><tbody>${records.map(record => `<tr><td><strong>${escapeHtml(record.id || "—")}</strong></td><td>${formatDate(record.date)}</td><td>${escapeHtml(record.room || "—")}<br><span class="muted-cell">${escapeHtml(record.roomType || "—")}</span></td><td class="num">${formatNumber(record.users)}</td><td class="num">${formatNumber(record.hours)}</td><td class="num">${formatNumber(record.meterBefore)}</td><td class="num">${formatNumber(record.meterAfter)}</td><td class="num">${formatNumber(record.kwh)}</td><td class="num">${formatNumber(record.price)}</td><td class="num">${formatCurrency(record.cost)}</td><td class="num">${formatNumber(record.rate)}</td><td>${statusMarkup(record)}</td><td class="problem-text">${record.reasons.length ? record.reasons.map(escapeHtml).join("<br>") : "—"}</td></tr>`).join("")}</tbody></table>`;
+    }
+    function renderRecords() {
+      const search = document.getElementById("table-search").value.trim().toLocaleLowerCase("th");
+      const visible = filteredRows.filter(record => !search || `${record.id} ${record.room}`.toLocaleLowerCase("th").includes(search));
+      document.getElementById("records-count").textContent = `${visible.length} / ${filteredRows.length} รายการ`;
+      document.getElementById("records-scope").textContent = `${totals(filteredRows).included.length} รายการนำมาคำนวณ · ${totals(filteredRows).invalid} รายการแยกออก · ส่งออก CSV ตามตัวกรอง`;
+      document.getElementById("records-table").innerHTML = recordTableMarkup(visible);
+    }
+    function renderInsights() {
+      const metrics = totals(filteredRows);
+      const byRoom = metrics.included.reduce((acc, record) => {
+        if (!acc[record.room]) acc[record.room] = { kwh: 0, hours: 0 };
+        acc[record.room].kwh += record.kwh;
+        acc[record.room].hours += record.hours;
+        return acc;
+      }, {});
+      const ranked = Object.entries(byRoom).map(([room, values]) => ({ room, ...values, rate: values.hours ? values.kwh / values.hours : 0 })).sort((a, b) => b.kwh - a.kwh);
+      const highest = ranked[0], flagged = filteredRows.filter(record => record.status === "review");
+      const dayCount = new Set(filteredRows.map(record => record.date).filter(Boolean)).size;
+      const insights = [
+        highest ? { title: "ห้องที่ใช้หน่วยไฟรวมสูงสุด", text: `<strong>${escapeHtml(highest.room)}</strong> ใช้ ${formatNumber(highest.kwh)} kWh (${metrics.kwh ? formatNumber(highest.kwh / metrics.kwh * 100) : "0"}% ของรายการที่รวม)` } : { title: "หน่วยไฟรวมตามตัวกรอง", text: "ไม่มีรายการที่ผ่านเกณฑ์ให้คำนวณในชุดที่เลือก" },
+        flagged.length ? { title: "พบสัญญาณอัตราใช้ไฟสูง", text: `<strong>${escapeHtml(flagged[0].id)} · ${escapeHtml(flagged[0].room)}</strong> อยู่ที่ ${formatNumber(flagged[0].rate)} kWh/ชั่วโมง ยังคงรวมในผลสรุปจนกว่าจะตรวจสอบเพิ่ม` } : { title: "สัญญาณอัตราใช้ไฟสูง", text: "ไม่พบรายการที่เข้าเกณฑ์สัญญาณในข้อมูลที่เลือก" },
+        { title: "ขอบเขตข้อมูลที่ใช้", text: `คำนวณ ${metrics.included.length} จาก ${filteredRows.length} รายการที่กรอง (${dayCount} วันที่มีบันทึก) · แยกผิดเงื่อนไข ${metrics.invalid} รายการ` }
+      ];
+      document.getElementById("insight-cards").innerHTML = insights.map((item, index) => `<article class="card insight-card"><div class="insight-index">FINDING 0${index + 1}</div><h3>${item.title}</h3><p>${item.text}</p></article>`).join("");
+      document.getElementById("recommendations").innerHTML = `<li>ตรวจสอบมิเตอร์และใบบันทึกของ <strong>${flagged.length ? escapeHtml(flagged.map(item => item.id).join(", ")) : "รายการที่แจ้งเตือน"}</strong> โดยเทียบกับเวลาใช้งานและอุปกรณ์จริง ก่อนปรับแผนลดไฟ</li><li>ยืนยันรายการที่ผิดเงื่อนไขกับผู้จดมิเตอร์ แล้วแก้ไขจากหลักฐานต้นฉบับก่อนนำข้อมูลฉบับใหม่มาคำนวณ</li>`;
+      document.getElementById("limitation").innerHTML = `ข้อมูลมีเพียง ${dayCount} วันที่บันทึกและมี 10 แถวในชุดต้นฉบับ ตัวอย่างน้อยและไม่มีข้อมูลขนาดห้อง/ชนิดอุปกรณ์ จึงใช้เปรียบเทียบเชิงพรรณนาเท่านั้น ค่าผิดกลุ่มเป็นสัญญาณให้ตรวจสอบ ไม่ใช่ข้อพิสูจน์ว่าห้องนั้นสิ้นเปลืองหรือบันทึกผิด`;
+    }
+    function renderMethod() {
+      const metrics = totals(rows);
+      document.getElementById("validation-evidence").innerHTML = `หน่วยไฟรวม: ${formatNumber(metrics.kwh)} kWh<br>ค่าไฟรวม: ${formatCurrency(metrics.cost)} บาท<br>อัตรารวม: ${formatNumber(metrics.rate)} kWh/ชม. (${formatNumber(metrics.kwh)} ÷ ${formatNumber(metrics.hours)})<br>แยก E009 (มิเตอร์ลด) และ E010 (ค่าไฟ/หน่วยติดลบ)`;
+    }
+    function exportCsv() {
+      const exportHeaders = [...HEADERS, "หน่วยไฟที่ใช้ (kWh)", "ค่าไฟ (บาท)", "หน่วยไฟต่อชั่วโมง (kWh/ชั่วโมง)", "สถานะตรวจสอบ", "เหตุผล", "แนวทางตรวจสอบ"];
+      const statusLabels = { valid: "ใช้งานได้", review: "ต้องตรวจสอบ", invalid: "ผิดเงื่อนไข" };
+      const quote = value => `"${String(value ?? "").replace(/"/g, '""')}"`;
+      const content = [exportHeaders, ...filteredRows.map(record => [
+        ...HEADERS.map(header => record.raw[header]), record.kwh, record.cost, record.rate,
+        statusLabels[record.status], record.reasons.join("; "), record.recommendation
+      ])].map(line => line.map(quote).join(",")).join("\r\n");
+      downloadCsv(content, "electricity_filtered_results.csv");
+      showToast(`ส่งออก CSV แล้ว ${filteredRows.length} รายการตามตัวกรอง`);
+    }
+    function downloadCsv(text, name) {
+      const blob = new Blob(["\uFEFF", text], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url; anchor.download = name; anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+    function showToast(message, duration = 3000) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), duration);
+    }
+    function bindEvents() {
+      document.querySelectorAll(".nav-button").forEach(button => button.addEventListener("click", () => {
+        const page = button.dataset.page;
+        document.querySelectorAll(".nav-button").forEach(item => { item.classList.toggle("active", item === button); item.removeAttribute("aria-current"); });
+        button.setAttribute("aria-current", "page");
+        document.querySelectorAll(".page").forEach(item => item.classList.toggle("active", item.id === `page-${page}`));
+        document.getElementById("current-page-label").textContent = PAGE_LABELS[page];
+        window.scrollTo(0, 0);
+      }));
+      ["date-from", "date-to", "room-filter", "type-filter"].forEach(id => document.getElementById(id).addEventListener("change", render));
+      document.getElementById("clear-filters").addEventListener("click", () => {
+        ["date-from", "date-to", "room-filter", "type-filter"].forEach(id => { document.getElementById(id).value = ""; });
+        render();
+      });
+      document.getElementById("table-search").addEventListener("input", renderRecords);
+      document.getElementById("export-csv").addEventListener("click", exportCsv);
+      document.getElementById("csv-upload").addEventListener("change", event => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try { loadCsv(String(reader.result ?? "")); showToast(`นำเข้า ${rows.length} รายการเรียบร้อย`); }
+          catch (error) { showToast(`นำเข้าไม่สำเร็จ: ${error.message}`, 5000); }
+          event.target.value = "";
+        };
+        reader.onerror = () => showToast("อ่านไฟล์ไม่สำเร็จ กรุณาลองเลือกไฟล์อีกครั้ง", 5000);
+        reader.readAsText(file, "UTF-8");
+      });
+    }
+
+    bindEvents();
+    loadCsv(SOURCE_CSV);
+  </script>
+</body>
+</html>
